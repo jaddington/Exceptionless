@@ -1,14 +1,8 @@
 ﻿using System;
-#if EMBEDDED
-using Exceptionless.Json;
-using Exceptionless.Json.Converters;
-using Exceptionless.Json.Linq;
-#else
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-#endif
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Serializer {
     internal class RequestInfoConverter : CustomCreationConverter<RequestInfo> {

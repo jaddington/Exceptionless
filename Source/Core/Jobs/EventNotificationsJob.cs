@@ -9,37 +9,40 @@ using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using NLog.Fluent;
 using UAParser;
+#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
     public class EventNotificationsJob : JobBase {
-        private readonly IQueue<EventNotification> _queue;
+        private readonly IQueue<EventNotificationWorkItem> _queue;
         private readonly IMailer _mailer;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly ICacheClient _cacheClient;
 
-        public EventNotificationsJob(IQueue<EventNotification> queue, IMailer mailer,
+        public EventNotificationsJob(IQueue<EventNotificationWorkItem> queue, IMailer mailer,
             IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository,
-            IUserRepository userRepository, ICacheClient cacheClient) {
+            IUserRepository userRepository, IEventRepository eventRepository, ICacheClient cacheClient) {
             _queue = queue;
             _mailer = mailer;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _userRepository = userRepository;
+            _eventRepository = eventRepository;
             _cacheClient = cacheClient;
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            QueueEntry<EventNotification> queueEntry = null;
+            QueueEntry<EventNotificationWorkItem> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue();
             } catch (Exception ex) {
@@ -49,7 +52,13 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
 
-            var eventNotification = queueEntry.Value;
+            var eventModel = _eventRepository.GetById(queueEntry.Value.EventId);
+            if (eventModel == null) {
+                queueEntry.Abandon();
+                return JobResult.FailedWithMessage("Could not load event {0}.", queueEntry.Value.EventId);
+            }
+
+            var eventNotification = new EventNotification(queueEntry.Value, eventModel);
             bool shouldLog = eventNotification.Event.ProjectId != Settings.Current.InternalProjectId;
             int emailsSent = 0;
             Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
@@ -147,8 +156,8 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).WriteIf(shouldLog);
 
-                bool shouldReportNewError = settings.ReportNewErrors && eventNotification.IsNew && eventNotification.Event.IsError(); ;
-                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical && eventNotification.Event.IsError(); ;
+                bool shouldReportNewError = settings.ReportNewErrors && eventNotification.IsNew && eventNotification.Event.IsError();
+                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical && eventNotification.Event.IsError();
                 bool shouldReportRegression = settings.ReportEventRegressions && eventNotification.IsRegression;
                 bool shouldReportNewEvent = settings.ReportNewEvents && eventNotification.IsNew;
                 bool shouldReportCriticalEvent = settings.ReportCriticalEvents && eventNotification.IsCritical;

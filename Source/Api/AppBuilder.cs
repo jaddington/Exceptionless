@@ -20,7 +20,7 @@ using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
@@ -42,9 +42,7 @@ namespace Exceptionless.Api {
                 throw new ArgumentNullException("container");
 
             Config = new HttpConfiguration();
-            ExceptionlessClient.Default.RegisterWebApi(Config);
 
-            Log.Info().Message("Starting api...").Write();
             if (Settings.Current.ShouldAutoUpgradeDatabase) {
                 var url = new MongoUrl(Settings.Current.MongoConnectionString);
                 string databaseName = url.DatabaseName;
@@ -54,8 +52,6 @@ namespace Exceptionless.Api {
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
             }
 
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
-            Config.Services.Replace(typeof(IExceptionHandler), new ExceptionlessReferenceIdExceptionHandler(ExceptionlessClient.Default));
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
@@ -73,6 +69,15 @@ namespace Exceptionless.Api {
             container.RegisterWebApiFilterProvider(Config);
 
             VerifyContainer(container);
+
+            container.Bootstrap(Config);
+            container.Bootstrap(app);
+            Log.Info().Message("Starting api...").Write();
+
+            Log.Info().Message("Starting api...").Write();
+
+            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
+            Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
             Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
             Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
@@ -176,13 +181,26 @@ namespace Exceptionless.Api {
             dataHelper.CreateTestData();
         }
 
-        public static Container CreateContainer() {
+        public static Container CreateContainer(bool includeInsulation = true) {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
             container.RegisterPackage<Core.Bootstrapper>();
             container.RegisterPackage<Bootstrapper>();
+
+            if (!includeInsulation)
+                return container;
+
+            Assembly insulationAssembly = null;
+            try {
+                insulationAssembly = Assembly.Load("Exceptionless.Insulation");
+            } catch (Exception ex) {
+                Log.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+            }
+
+            if (insulationAssembly != null)
+                container.RegisterPackages(new[] { insulationAssembly });
 
             return container;
         }

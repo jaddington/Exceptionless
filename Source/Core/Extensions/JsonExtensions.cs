@@ -1,23 +1,12 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Exceptionless.Core.Reflection;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
@@ -163,6 +152,7 @@ namespace Exceptionless.Core.Extensions {
             target.Remove(name);
             return value;
         }
+
         public static bool IsJson(this string value) {
             return value.GetJsonType() != JsonType.None;
         }
@@ -227,7 +217,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 value = data.FromJson<T>(settings);
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception) {
                 value = default(T);
                 return false;
             }
@@ -265,7 +255,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 value = data.FromBson<T>(settings);
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception) {
                 value = default(T);
                 return false;
             }
@@ -275,7 +265,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 value = data.FromBson(objectType, settings);
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception) {
                 value = null;
                 return false;
             }

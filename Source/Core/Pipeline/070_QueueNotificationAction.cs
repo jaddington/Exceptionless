@@ -1,33 +1,22 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Linq;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
 using Foundatio.Queues;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
     public class QueueNotificationAction : EventPipelineActionBase {
-        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, 
+        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, 
             IQueue<WebHookNotification> webHookNotificationQueue, 
             IWebHookRepository webHookRepository,
             WebHookDataPluginManager webHookDataPluginManager) {
@@ -45,8 +34,8 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             if (ShouldQueueNotification(ctx))
-                _notificationQueue.Enqueue(new EventNotification {
-                    Event = ctx.Event,
+                _notificationQueue.Enqueue(new EventNotificationWorkItem {
+                    EventId = ctx.Event.Id,
                     IsNew = ctx.IsNew,
                     IsCritical = ctx.Event.IsCritical(),
                     IsRegression = ctx.IsRegression,

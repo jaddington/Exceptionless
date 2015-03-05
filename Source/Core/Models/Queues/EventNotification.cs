@@ -1,21 +1,25 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using Exceptionless.Core.Utility;
-using Exceptionless.Models;
+﻿using System;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Queues.Models {
-    public class EventNotification : ExtensibleObject {
+    public class EventNotification : EventNotificationWorkItem {
+        public EventNotification() {}
+
+        public EventNotification(EventNotificationWorkItem workItem, PersistentEvent ev) {
+            EventId = workItem.EventId;
+            IsNew = workItem.IsNew;
+            IsCritical = workItem.IsCritical;
+            IsRegression = workItem.IsRegression;
+            TotalOccurrences = workItem.TotalOccurrences;
+            ProjectName = workItem.ProjectName;
+            Event = ev;
+        }
+
         public PersistentEvent Event { get; set; }
+    }
+
+    public class EventNotificationWorkItem {
+        public string EventId { get; set; }
         public bool IsNew { get; set; }
         public bool IsCritical { get; set; }
         public bool IsRegression { get; set; }

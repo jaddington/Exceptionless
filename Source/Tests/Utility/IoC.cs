@@ -1,22 +1,10 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using System.Web.Http;
-using Exceptionless.App;
+﻿using System;
+using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core.Mail;
+using Nest;
 using SimpleInjector;
-using SimpleInjector.Integration.WebApi;
 
-namespace Exceptionless.Tests.Utility {
+namespace Exceptionless.Api.Tests.Utility {
     public static class IoC {
         private static void RegisterServices(Container container) {
             container.Register<IMailer, NullMailer>();
@@ -35,7 +23,7 @@ namespace Exceptionless.Tests.Utility {
             return result as TService;
         }
 
-        private static Container GetContainer() {
+        public static Container GetContainer() {
             if (!_initialized)
                 Initialize();
 
@@ -43,12 +31,13 @@ namespace Exceptionless.Tests.Utility {
         }
 
         private static void Initialize() {
-            _container = SimpleInjectorInitializer.CreateContainer();
+            _container = AppBuilder.CreateContainer(false);
             _initialized = true;
 
             RegisterServices(_container);
 
-            GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(_container);
+            var searchclient = _container.GetInstance<IElasticClient>();
+            searchclient.DeleteIndex(i => i.AllIndices());
         }
 
         #endregion

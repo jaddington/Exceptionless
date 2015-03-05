@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Net;
 using System.Web.Http;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models.Data;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 
@@ -14,13 +13,13 @@ namespace Exceptionless.Api.Controllers {
         private readonly SystemHealthChecker _healthChecker;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<MailMessage> _mailQueue;
-        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly IMetricsClient _metricsClient;
 
         public StatusController(SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue,
-            IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
+            IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
             _healthChecker = healthChecker;
             _eventQueue = eventQueue;
             _mailQueue = mailQueue;
@@ -39,7 +38,7 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok(new {
                 Message = "All Systems Check",
-                Version = ThisAssembly.AssemblyInformationalVersion
+                Version = Settings.Current.Version
             });
         }
 

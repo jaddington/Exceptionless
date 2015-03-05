@@ -17,8 +17,8 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.DateTimeExtensions;
+using Exceptionless.Core.Models.Data;
 using FluentValidation;
 using Foundatio.Metrics;
 using Foundatio.Queues;
@@ -69,10 +69,14 @@ namespace Exceptionless.Api.Controllers {
             if (model == null)
                 return NotFound();
 
+            var organization = _organizationRepository.GetById(model.OrganizationId, true);
+            if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
+                return PlanLimitReached("Unable to view event occurrence due to plan limits.");
+
             var timeInfo = GetTimeInfo(time, offset);
             var processResult = QueryProcessor.Process(filter);
             if (!processResult.IsValid)
-                return BadRequest(processResult.Message);
+                return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
@@ -110,7 +114,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = _repository.GetByFilter(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
+                Log.Error().Exception(ex).Write();
+                //ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
             

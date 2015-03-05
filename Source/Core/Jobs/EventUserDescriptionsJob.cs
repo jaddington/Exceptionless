@@ -7,11 +7,12 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Data;
 using Foundatio.Jobs;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
     public class EventUserDescriptionsJob : JobBase {

@@ -1,16 +1,4 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using System.Net;
+﻿using System;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Api.Controllers;
@@ -21,8 +9,8 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
@@ -137,7 +125,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override WebHook GetModel(string id, bool useCache = true) {
-            var model = base.GetModel(id);
+            var model = base.GetModel(id, useCache);
             return model != null && IsInProject(model.ProjectId) ? model : null;
         }
 

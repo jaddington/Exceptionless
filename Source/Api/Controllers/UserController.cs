@@ -6,13 +6,12 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
-using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using NLog.Fluent;
 
@@ -91,7 +90,8 @@ namespace Exceptionless.Api.Controllers {
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
-                ex.ToExceptionless().AddObject(user).AddObject(email, "Email Address").Submit();
+                Log.Error().Exception(ex).Write();
+                //ex.ToExceptionless().AddObject(user).AddObject(email, "Email Address").Submit();
                 return BadRequest("An error occurred.");
             }
 
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Controllers {
             user.MarkEmailAddressVerified();
             _repository.Save(user);
 
-            ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
+            //ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
             return Ok();
         }
 

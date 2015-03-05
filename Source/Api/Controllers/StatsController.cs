@@ -1,22 +1,12 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
-using Exceptionless.Models.Stats;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Stats;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
@@ -54,7 +44,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset }).AddTags("Search").Submit();
+                Log.Error().Exception(ex).Write();
+                //ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset }).AddTags("Search").Submit();
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
 

@@ -9,10 +9,11 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Helpers;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using MongoDB.Driver;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
@@ -94,7 +95,7 @@ namespace Exceptionless.Api.Controllers {
             TModel model;
             try {
                 model = AddModel(mapped);
-            } catch (WriteConcernException) {
+            } catch (MongoWriteConcernException) {
                 return Conflict();
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
